@@ -1,8 +1,8 @@
 /**
  * Hello application
- * RESTApi
- * If path is 'hello' - statusCode 200 and object {payload : 'Hello world'}, if else - statusCode - 404 and payload {}
- * 
+ * RESTful JSON API
+ * Listen port 3000
+ * When someone POST his name in name='someone', APP return a welcome message in JSON format
  */
 
  //Dependencies
@@ -44,43 +44,61 @@
     // Get the URL and parse it
     const parsedUrl = url.parse(req.url, true);
 
+    // Get the method
+    const method = req.method;
+
+    // Get the query
+    const query = parsedUrl.query;
+
     // Get the path
     const path = parsedUrl.pathname;
     // Replace all '/' in start and finish by ''
     const trimmedPath = path.replace(/^\/+|\/+$/g,'');
 
+    // Get data from frontend
+    const data = {};
+
+    // Get the name of user and put it in the data object
+    data.name = typeof(query.name) !=='undefined' ? query.name : 'anonymouse';
+    
     // Choose handler
     const chosenHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
-    console.log('trimmedPath:',trimmedPath);
-    
-    // When request has finished
-    chosenHandler((statusCode, payload = {})=>{
-        // convert payload to string
-        const payloadString = JSON.stringify(payload);           
-        
-        // Return the response
-        res.setHeader('Content-Type', 'application/json');
-        res.writeHead(statusCode);
-        res.end(payloadString);
 
-        // Log
-        console.log(`Response by route ${trimmedPath} with code ${statusCode} and payload ${payloadString}`);
-    });        
+    if (method == 'POST'){
+        // When request has finished
+        chosenHandler(data,(statusCode, payload = {})=>{
+            // convert payload to string
+            const payloadString = JSON.stringify(payload);           
+            
+            // Return the response
+            res.setHeader('Content-Type', 'application/json');
+            res.writeHead(statusCode);
+            res.end(payloadString);
 
+            // Log
+            console.log(`Response by route ${trimmedPath} with code ${statusCode} and payload ${payloadString}`);
+        });        
+    }
+    else {
+        res.end('use POST request\n');
+    }
  };
- 
-// Handlers
+  
+ // Handlers
  const handlers = {};
-
- handlers.hello = (callback)=>{
+ 
+ /**
+  * Hello handler
+  * data - contain a user name 
+  * callback - function
+ */
+ handlers.hello = (data,callback)=>{
     // Return 200 'OK' status code and a payload object
-    console.log('ok');
-    callback(200, {payload : 'Hello world!!!'});
+    callback(200, {payload : `Hello, ${data.name}`});
  };
 
- handlers.notFound = (callback)=>{
+ handlers.notFound = (name,callback)=>{
     // Return 404 'NotFound' status code
-    console.log('not found');
     callback(404);
  };
  
